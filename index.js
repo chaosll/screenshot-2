@@ -27,18 +27,29 @@ router.get('/get', async (ctx) => {
     await page.setViewport({ width: 1280, height: 800 });
     await page.goto(targetUrl, { waitUntil: 'networkidle2' });
     
-    // 生成截图Buffer
+    // 1.生成截图Buffer
     const screenshotBuffer = await page.screenshot({
       type: 'png',
       fullPage: true, // 截取整个页面
     });
+    // 2.生成全部页面的PDF
+    const pdfBuffer = await page.pdf({ 
+      // 大小设置为A4
+      format: 'A4',
+      // 文件路径，如果不需要保存到本地，可以不设置
+      path: 'example.pdf',
+     });
 
     // 关闭浏览器释放资源
     await browser.close();
 
-    // 设置响应头
-    ctx.set('Content-Type', 'image/png');
-    ctx.body = Buffer.from(screenshotBuffer);
+    // // 1.设置截图时响应头
+    // ctx.set('Content-Type', 'image/png');
+    // ctx.body = Buffer.from(screenshotBuffer);
+    
+    // 2.设置PDF时响应头
+    ctx.set('Content-Type', 'application/pdf');
+    ctx.body = Buffer.from(pdfBuffer);
 
   } catch (error) {
     console.error('截图失败:', error);
