@@ -4,7 +4,7 @@
       v-for="(item, index) in btnMap"
       :key="index"
       :class="{ item, active: item.active }"
-      @click="onClickHandler(item.key, item.nextValue)"
+      @click="onClickHandler(item)"
     >
       <md-tooltip effect="dark" :content="item.label" placement="top">
         <div :class="['item-box', isLocked ? 'locked' : '']">
@@ -25,7 +25,14 @@ const emit = defineEmits(['change'])
 const widgetStore = useWidgetStore()
 const elementStore = useElementStore()
 
-const btnMap = reactive([
+type BtnItem = {
+	key: string,
+	nextValue: string,
+	label: string,
+	active: boolean
+}
+
+const btnMap = reactive<BtnItem[]>([
 	{
 		key:'fontWeight',
 		nextValue: 'bold',
@@ -58,10 +65,10 @@ const btnMap = reactive([
 	}
 ])
 
-watch(()=>elementStore.textSelection, (newVal)=>{
-	console.log('样式==========', elementStore.innerSpanStyles)
+watch(()=>elementStore.innerSpanStyles, (newVal)=>{
+	console.log('样式==========', newVal)
 	// 字重fontWeight
-	if (elementStore.innerSpanStyles.fontWeight.isSame && elementStore.innerSpanStyles.fontWeight.styles[0] === '700') {
+	if (newVal.fontWeight.isSame && newVal.fontWeight.styles[0] === '700') {
 		console.log('都是700', )
 		btnMap[0].active = true
 		btnMap[0].nextValue = 'initial'
@@ -70,7 +77,7 @@ watch(()=>elementStore.textSelection, (newVal)=>{
 		btnMap[0].nextValue = 'bold'
 	}
 	// 斜体fontStyle
-	if (elementStore.innerSpanStyles.fontStyle.isSame && elementStore.innerSpanStyles.fontStyle.styles[0] === "italic") {
+	if (newVal.fontStyle.isSame && newVal.fontStyle.styles[0] === "italic") {
 		btnMap[1].active = true
 		btnMap[1].nextValue = 'initial'
 	} else {
@@ -78,7 +85,7 @@ watch(()=>elementStore.textSelection, (newVal)=>{
 		btnMap[1].nextValue = 'italic'
 	}
 	// 下划线textDecorationLine
-	if (elementStore.innerSpanStyles.textDecorationLine.isSame && elementStore.innerSpanStyles.textDecorationLine.styles[0] === "underline") {
+	if (newVal.textDecorationLine.isSame && newVal.textDecorationLine.styles[0] === "underline") {
 		btnMap[2].active = true
 		btnMap[2].nextValue = 'none'
 	} else {
@@ -86,7 +93,7 @@ watch(()=>elementStore.textSelection, (newVal)=>{
 		btnMap[2].nextValue = 'underline'
 	}
 	// 删除线textDecorationLine
-	if (elementStore.innerSpanStyles.textDecorationLine.isSame && elementStore.innerSpanStyles.textDecorationLine.styles[0] === "line-through") {
+	if (newVal.textDecorationLine.isSame && newVal.textDecorationLine.styles[0] === "line-through") {
 		btnMap[3].active = true
 		btnMap[3].nextValue = 'none'
 	} else {
@@ -106,9 +113,10 @@ watch(()=>elementStore.selectedActiveLayer?.writingMode,(newVal)=>{
 	console.log('widget', elementStore.selectedActiveLayer)
 })
 
-const isLocked = computed(() => widgetStore.getWidgetIsLocked())
+const isLocked = computed<boolean>(() => widgetStore.getWidgetIsLocked())
 
-const onClickHandler = (key:string, nextValue: string | number) => {
+const onClickHandler = (item) => {
+	const {key, nextValue} = item
   if (isLocked.value) return
 	const widget = elementStore.selectedActiveLayer
 	if(!widget) return
