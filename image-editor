@@ -1,0 +1,190 @@
+<template>
+  <div class="container">
+    <div
+      v-for="(item, index) in btnMap"
+      :key="index"
+      :class="{ item, active: item.active }"
+      @click="onClickHandler(item.key, item.nextValue)"
+    >
+      <md-tooltip effect="dark" :content="item.label" placement="top">
+        <div :class="['item-box', isLocked ? 'locked' : '']">
+          <img class="icon" :src="fontStyleStore.textDecorationList[index].icon" alt="" />
+        </div>
+      </md-tooltip>
+    </div>
+  </div>
+</template>
+<script setup lang="ts">
+import { useWidgetStore, useElementStore } from '@image-editor/store'
+import { computed, watch, ref, reactive } from 'vue'
+import { useFontStyleStore } from '@image-editor/store'
+const fontStyleStore = useFontStyleStore()
+
+const emit = defineEmits(['change'])
+
+const widgetStore = useWidgetStore()
+const elementStore = useElementStore()
+
+const btnMap = reactive([
+	{
+		key:'fontWeight',
+		nextValue: 'bold',
+		label: '加粗',
+		active: false
+	},
+	{
+		key:'fontStyle',
+		nextValue: 'italic',
+		label: '斜体',
+		active: false
+	},
+	{
+		key:'textDecoration',
+		nextValue: 'underline',
+		label: '下划线',
+		active: false
+	},
+	{
+		key:'textDecoration',
+		nextValue: 'line-through',
+		label: '删除线',
+		active: false
+	},
+	{
+		key:'writingMode',
+		nextValue: 'vertical-lr',
+		label: '文字竖排',
+		active: false
+	}
+])
+
+watch(()=>elementStore.textSelection, (newVal)=>{
+	console.log('样式==========', elementStore.innerSpanStyles)
+	// 字重fontWeight
+	if (elementStore.innerSpanStyles.fontWeight.isSame && elementStore.innerSpanStyles.fontWeight.styles[0] === '700') {
+		console.log('都是700', )
+		btnMap[0].active = true
+		btnMap[0].nextValue = 'initial'
+	} else {
+		btnMap[0].active = false
+		btnMap[0].nextValue = 'bold'
+	}
+	// 斜体fontStyle
+	if (elementStore.innerSpanStyles.fontStyle.isSame && elementStore.innerSpanStyles.fontStyle.styles[0] === "italic") {
+		btnMap[1].active = true
+		btnMap[1].nextValue = 'initial'
+	} else {
+		btnMap[1].active = false
+		btnMap[1].nextValue = 'italic'
+	}
+	// 下划线textDecorationLine
+	if (elementStore.innerSpanStyles.textDecorationLine.isSame && elementStore.innerSpanStyles.textDecorationLine.styles[0] === "underline") {
+		btnMap[2].active = true
+		btnMap[2].nextValue = 'none'
+	} else {
+		btnMap[2].active = false
+		btnMap[2].nextValue = 'underline'
+	}
+	// 删除线textDecorationLine
+	if (elementStore.innerSpanStyles.textDecorationLine.isSame && elementStore.innerSpanStyles.textDecorationLine.styles[0] === "line-through") {
+		btnMap[3].active = true
+		btnMap[3].nextValue = 'none'
+	} else {
+		btnMap[3].active = false
+		btnMap[3].nextValue = 'line-through'
+	}
+}, {deep: true})
+
+watch(()=>elementStore.selectedActiveLayer?.writingMode,(newVal)=>{
+	if(newVal==="vertical-lr") {
+		btnMap[4].active = true
+		btnMap[4].nextValue = 'initial'
+	} else {
+		btnMap[4].active = false
+		btnMap[4].nextValue = 'vertical-lr'
+	}
+	console.log('widget', elementStore.selectedActiveLayer)
+})
+
+const isLocked = computed(() => widgetStore.getWidgetIsLocked())
+
+const onClickHandler = (key:string, nextValue: string | number) => {
+  if (isLocked.value) return
+	const widget = elementStore.selectedActiveLayer
+	if(!widget) return
+	console.log('111', key, nextValue, widget)
+
+	if (key === 'writingMode') {
+		elementStore.clearBrowserSelection()
+		const width = widget.width
+		const height = widget.height
+		widgetStore.updateWidgetMultiple({
+			uuid: widget.uuid,
+			data: [
+				{
+					key: 'width',
+					value: height
+				},
+				{
+					key: 'height',
+					value: width
+				},
+				{
+					key: 'writingMode',
+					value: btnMap[4].nextValue
+				}
+			],
+			pushHistory: true
+		})
+	} else {
+		widgetStore.updateSelectedTextStyle({
+			uuid: widget.uuid,
+			key,
+			value: nextValue,
+			pushHistory: true
+		})
+	}
+}
+</script>
+<style scoped lang="scss">
+@import url('./common.scss');
+
+.container {
+  padding: 0 4px;
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  .item {
+    width: 24px;
+    height: 24px;
+
+    &.active,
+    &:hover {
+      background: #e5e6eb;
+      border-radius: 3px;
+    }
+    &.disable {
+      cursor: not-allowed;
+      .item-box {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+    }
+    .item-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      &.locked {
+        cursor: not-allowed;
+      }
+    }
+    .icon {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+</style>
